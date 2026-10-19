@@ -1,0 +1,14 @@
+plugins { id 'net.fabricmc.fabric-loom' }
+base { archivesName = 'prototype-demo-addon' }
+java { toolchain { languageVersion = JavaLanguageVersion.of(25) }; withSourcesJar() }
+dependencies {
+    minecraft "com.mojang:minecraft:${rootProject.minecraft_version}"
+    implementation "net.fabricmc:fabric-loader:${rootProject.loader_version}"
+    implementation "net.fabricmc.fabric-api:fabric-api:${rootProject.fabric_api_version}"
+    implementation project(':core')
+}
+def resourceVersion = project.version.toString()
+processResources {
+    inputs.property 'version', resourceVersion
+    filesMatching('fabric.mod.json') { expand version: resourceVersion }
+}

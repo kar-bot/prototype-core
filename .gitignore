@@ -1,0 +1,7 @@
+# Gradle and local Minecraft runs
+.gradle/
+**/build/
+**/run/
+.idea/
+*.iml
+local.properties

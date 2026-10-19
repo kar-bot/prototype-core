@@ -1,0 +1,41 @@
+plugins {
+    id 'net.fabricmc.fabric-loom'
+    id 'maven-publish'
+}
+evaluationDependsOn(':core-domain')
+version = rootProject.mod_version
+base { archivesName = 'prototype-core' }
+loom {
+    splitEnvironmentSourceSets()
+    mods { prototype { sourceSet sourceSets.main; sourceSet sourceSets.client } }
+}
+java { toolchain { languageVersion = JavaLanguageVersion.of(25) }; withSourcesJar() }
+dependencies {
+    minecraft "com.mojang:minecraft:${rootProject.minecraft_version}"
+    implementation "net.fabricmc:fabric-loader:${rootProject.loader_version}"
+    implementation "net.fabricmc.fabric-api:fabric-api:${rootProject.fabric_api_version}"
+    api project(':core-domain')
+    testImplementation platform('org.junit:junit-bom:5.12.2')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation 'org.ow2.asm:asm-tree:9.10.1'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+def resourceVersion = project.version.toString()
+processResources {
+    inputs.property 'version', resourceVersion
+    filesMatching('fabric.mod.json') { expand version: resourceVersion }
+}
+jar {
+    from(project(':core-domain').sourceSets.main.output)
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    manifest { attributes("Prototype-API-Version": "1", "Prototype-Core-Version": project.version) }
+}
+sourcesJar { from project(':core-domain').sourceSets.main.allSource }
+publishing {
+    publications { mavenJava(MavenPublication) { from components.java; artifactId = 'prototype-core' } }
+}
+
+// Client DTO/thumbnail validation tests live in the test JAR only.
+sourceSets.test.compileClasspath += sourceSets.client.output + sourceSets.client.compileClasspath
+sourceSets.test.runtimeClasspath += sourceSets.client.output + sourceSets.client.runtimeClasspath
+tasks.named('test') { dependsOn tasks.named('clientClasses') }

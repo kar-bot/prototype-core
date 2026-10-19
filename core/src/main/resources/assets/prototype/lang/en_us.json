@@ -1,0 +1,12 @@
+{
+  "item.prototype.prototype_sword": "Prototype Sword",
+  "screen.prototype.admin": "Prototype Core",
+  "screen.prototype.players": "Players",
+  "screen.prototype.addons": "Addons",
+  "screen.prototype.class_ban": "Class Ban",
+  "screen.prototype.hybrid": "Hybrid",
+  "screen.prototype.active": "Active",
+  "screen.prototype.allowed": "Allowed classes",
+  "screen.prototype.search": "Search players or addons",
+  "screen.prototype.thumbnail_fallback": "Addon thumbnail unavailable"
+}

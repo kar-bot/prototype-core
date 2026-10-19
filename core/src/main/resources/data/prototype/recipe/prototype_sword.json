@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [" P", "IP", " S"],
+  "key": {
+    "P": "#minecraft:wooden_tool_materials",
+    "I": "minecraft:iron_nugget",
+    "S": "minecraft:stick"
+  },
+  "result": { "id": "prototype:prototype_sword", "count": 1 }
+}
