@@ -1,4 +1,8 @@
-# Prototype Core 0.1.1 delivery and validation
+# Prototype Core validation
+
+Current 0.2.0-alpha.1 evidence: [neutral control validation](CONTROLS_VALIDATION.md). The following report records the historical 0.1.1 delivery and its artifacts/results.
+
+## Prototype Core 0.1.1 delivery and validation
 
 Prototype Core is a new standalone project targeting Minecraft Java 26.3, Fabric Loader 0.19.5, Fabric API 0.162.0+26.3, Loom 1.18.3, Gradle 9.7.1, and Java 25. The existing Pale repository is outside this project's scope. Core contains no supernatural class gameplay; the demo is a separate JAR.
 

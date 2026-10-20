@@ -3,6 +3,7 @@ package dev.prototype.core;
 import dev.prototype.core.api.Registry;
 import dev.prototype.core.command.PrototypeCommands;
 import dev.prototype.core.conversion.ConversionManager;
+import dev.prototype.core.control.ClassControlDispatcher;
 import dev.prototype.core.item.CoreComponents;
 import dev.prototype.core.item.PrototypeItems;
 import dev.prototype.core.network.PrototypeNetworking;
@@ -17,8 +18,10 @@ public final class PrototypeCore implements ModInitializer {
     public static final String MOD_ID = "prototype";
     private static final Registry REGISTRY = new Registry();
     private static final ConversionManager CONVERSIONS = new ConversionManager();
+    private static final ClassControlDispatcher CONTROLS = new ClassControlDispatcher();
     public static Registry registry() { return REGISTRY; }
     public static ConversionManager conversions() { return CONVERSIONS; }
+    public static ClassControlDispatcher controls() { return CONTROLS; }
 
     @Override public void onInitialize() {
         CoreComponents.init();
@@ -27,6 +30,7 @@ public final class PrototypeCore implements ModInitializer {
         CommandRegistrationCallback.EVENT.register((dispatcher, access, environment) -> PrototypeCommands.register(dispatcher));
         ServerLifecycleEvents.SERVER_STARTING.register(server -> {
             CONVERSIONS.freeze();
+            CONTROLS.freeze();
             PrototypeRuntime.start(server, REGISTRY);
         });
         ServerLifecycleEvents.SERVER_STOPPING.register(PrototypeRuntime::stop);

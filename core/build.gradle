@@ -28,7 +28,7 @@ processResources {
 jar {
     from(project(':core-domain').sourceSets.main.output)
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    manifest { attributes("Prototype-API-Version": "1", "Prototype-Core-Version": project.version) }
+    manifest { attributes("Prototype-API-Version": "2", "Prototype-Core-Version": project.version) }
 }
 sourcesJar { from project(':core-domain').sourceSets.main.allSource }
 publishing {

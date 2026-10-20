@@ -1,4 +1,8 @@
 {
+  "key.category.prototype.class_controls": "Prototype Core",
+  "key.prototype.ability_1": "Class Ability 1",
+  "key.prototype.ability_2": "Class Ability 2",
+  "key.prototype.status": "Class Status",
   "item.prototype.prototype_sword": "Prototype Sword",
   "screen.prototype.admin": "Prototype Core",
   "screen.prototype.players": "Players",

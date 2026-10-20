@@ -6,7 +6,9 @@ This repository is independent of Pale. It implements no Pale, Warden, Vampire, 
 
 ## Toolchain and modules
 
-Release version: `0.1.1`.
+Development prerelease: `0.2.0-alpha.1` (latest stable remains `0.1.1`).
+
+Core now supplies three configurable neutral controls: Class Ability 1 (R), Class Ability 2 (G), and Class Status (K). The server routes each request only to the currently authorized active class. Addons register optional handlers and own their Status data/screens. See [the control API](docs/CLASS_CONTROLS.md) and the separate demo addon.
 
 | Component | Version |
 | --- | --- |
@@ -39,11 +41,11 @@ The GameTest XML report is `integration-tests/build/gametest-results.xml`. Gradl
 
 In the prepared cloud machine, `source scripts/dev-env.sh` selects the installed JDK 25 and writable Gradle cache. `scripts/setup-cloud.sh` installs the pinned, checksum-verified JDK when missing and configures the platform's Java proxy/CA trust before repeatable JUnit/build validation. Existing tasks use the existing checkout; no Git worktree is required.
 
-The production outputs are `core/build/libs/prototype-core-0.1.1.jar` and `demo-addon/build/libs/prototype-demo-addon-0.1.0.jar`. Install Core together with the pinned Fabric Loader/API on both the server and clients. The demo JAR is optional and must be installed separately for demo validation; it is not inside Core.
+The production outputs are `core/build/libs/prototype-core-0.2.0-alpha.1.jar` and `demo-addon/build/libs/prototype-demo-addon-0.2.0-alpha.1.jar`. Install Core together with the pinned Fabric Loader/API on both the server and clients. The demo JAR is optional and must be installed separately for demo validation; it is not inside Core.
 
 For development, use the module's Loom run tasks, such as `./gradlew :core:runClient` and `./gradlew :core:runServer`. A dedicated development server requires accepting Minecraft's EULA in its generated run directory. Add the demo addon JAR to that run's `mods` directory when exercising the external consumer.
 
-Core 0.1.1 removes duplicate admin-screen background extraction on Minecraft 26.3. Headless regression tests cover Players, Addons, class selection, inherited rendering, and future custom screens. The complete clean validation run passed **210 tests**: 165 JUnit cases and 45 dedicated-server GameTests, with no failures or skips. See the [delivery and validation report](docs/VALIDATION.md) for details, artifact checksums and remaining manual checks.
+The 0.2.0-alpha.1 clean build passed **234 tests**: 174 JUnit and 60 dedicated-server GameTests, with no failures or skips. This includes neutral-control security, switching and lifecycle checks, and the existing admin background/blur regressions plus the new demo Status screen regression. See the [control validation report](docs/CONTROLS_VALIDATION.md) for checksums and remaining manual client checks, and [earlier delivery evidence](docs/VALIDATION.md) for the 0.1.1 history.
 
 ## Player and administration workflow
 

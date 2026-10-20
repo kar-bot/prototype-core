@@ -51,3 +51,11 @@ Use a new test world. Install the production Core JAR on server and clients. Ins
 - Disconnect/reconnect, die/respawn, switch worlds, and stop the server while a class has transient effects. Confirm lifecycle cleanup and later activation do not leak another player's state.
 
 Record the Minecraft/Fabric/Core/addon versions, server log, client log, and failed steps. These are manual acceptance checks, not claims that a test was executed.
+
+## Neutral controls and addon Status (0.2 API)
+
+- Confirm Controls lists exactly Class Ability 1, Class Ability 2 and Class Status under Prototype Core. Rebind all three and verify the new keys work. Typing in screens must not trigger class controls.
+- With demo assigned, Ability 1 shows its action-bar message, Ability 2 is silent, and Status opens its addon screen. Verify native background blur is extracted once and Done/Escape work.
+- Switch to a second control-enabled addon with Hybrid on. Each key routes only to the current class without reconnecting. Hold a foreign sword and verify addon-specific item checks still apply.
+- Ban/unban and disable/re-enable while testing controls. Disabled/banned handlers must never execute; status closes on deactivation, and no stale transient work reappears.
+- Use two clients, including an ordinary player without secret-class authorization. Status data goes only to its requester. Invalid slots and unavailable handlers disclose no class metadata. Verify status closes on disconnect/respawn and never reopens from a stale delayed response.

@@ -2,15 +2,15 @@
 
 > Codex contributors: [`.agents/skills/prototype-addon-development/SKILL.md`](../.agents/skills/prototype-addon-development/SKILL.md) is the authoritative local skill for developing or migrating Prototype addons. Consult it when integrating an addon or changing this API.
 
-Prototype Core `0.1.1` targets Minecraft `26.3`, Fabric Loader `0.19.5`, Fabric API `0.162.0+26.3`, and Java `25`. Use Loom `1.18.3` and Gradle `9.7.1` consistently with this repository. Minecraft 26.3 uses unobfuscated Mojang names.
+Prototype Core `0.2.0-alpha.1` targets Minecraft `26.3`, Fabric Loader `0.19.5`, Fabric API `0.162.0+26.3`, and Java `25`. Use Loom `1.18.3` and Gradle `9.7.1` consistently with this repository. Minecraft 26.3 uses unobfuscated Mojang names. See [neutral class controls](CLASS_CONTROLS.md) for the new three-slot API and addon-owned Status GUI pattern.
 
 ## Depend on production Core
 
-For a standalone addon, place the built **production** `prototype-core-0.1.1.jar` in your addon's `libs` directory and add it as a local development dependency:
+For a standalone addon, place the built **production** `prototype-core-0.2.0-alpha.1.jar` in your addon's `libs` directory and add it as a local development dependency:
 
 ```groovy
 dependencies {
-    implementation files('libs/prototype-core-0.1.1.jar')
+    implementation files('libs/prototype-core-0.2.0-alpha.1.jar')
 }
 ```
 
@@ -18,7 +18,7 @@ Declare the runtime dependency in your addon's `fabric.mod.json`:
 
 ```json
 "depends": {
-  "prototype": ">=0.1.0 <0.2.0",
+  "prototype": ">=0.2.0-alpha.1 <0.3.0",
   "fabricloader": ">=0.19.5",
   "minecraft": "26.3",
   "java": ">=25",
@@ -36,7 +36,7 @@ The supported addon contracts are `dev.prototype.core.api` (identifiers, metadat
 
 `dev.prototype.core.client`, `command`, `network`, `security`, and `persistence`, along with Core initializer/runtime wiring, are implementation details. Packet action strings, JSON layouts, GUI classes, and storage classes are not addon extension points. Do not construct packets to administer Core, depend on private UI classes, or write Core's persistence file directly.
 
-The documented `0.1.x` contracts should remain compatible across patch releases. Declare a bounded compatibility range and recompile/retest when the Core minor version or Minecraft/Fabric version changes. A breaking API change requires an explicit versioned migration; display-name changes do not change stable IDs.
+The 0.2 API retains earlier registration overloads and adds optional class controls. Declare a bounded compatibility range and recompile/retest when Core or Minecraft/Fabric changes. Prerelease APIs require integration validation; display-name changes do not change stable IDs.
 
 ## Register an addon and its classes
 
@@ -63,7 +63,7 @@ void registerWithCore() {
     PrototypeApi.registerConvertible(DEMO_SWORD);
     PrototypeApi.registerAddon(
         new AddonDefinition(
-            ADDON, "Prototype Demo", "0.1.0",
+            ADDON, "Prototype Demo", "0.2.0-alpha.1",
             "prototype_demo:textures/gui/demo_thumbnail.png",
             List.of(new ClassDefinition(CLASS, "Demo"))),
         Map.of(CLASS, context -> Optional.of(new ItemStack(DEMO_SWORD))),

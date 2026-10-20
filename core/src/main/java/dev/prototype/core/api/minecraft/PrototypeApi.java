@@ -4,6 +4,7 @@ import dev.prototype.core.PrototypeCore;
 import dev.prototype.core.PrototypeRuntime;
 import dev.prototype.core.api.AddonDefinition;
 import dev.prototype.core.api.AddonLifecycle;
+import dev.prototype.core.api.ClassControlSlot;
 import dev.prototype.core.api.CoreService;
 import dev.prototype.core.api.Id;
 import dev.prototype.core.api.Registry;
@@ -23,6 +24,17 @@ public final class PrototypeApi {
     public static void registerAddon(AddonDefinition definition,
                                      Map<Id, SwordConversionProvider> providers,
                                      AddonLifecycle lifecycle) {
+        registerAddon(definition, providers, lifecycle, Map.of());
+    }
+
+    /**
+     * Atomically register metadata, conversion providers, lifecycle, and optional per-class controls.
+     * Controls may omit classes/slots. Maps are defensively copied; registration closes at startup.
+     */
+    public static void registerAddon(AddonDefinition definition,
+                                     Map<Id, SwordConversionProvider> providers,
+                                     AddonLifecycle lifecycle,
+                                     Map<Id, Map<ClassControlSlot, ClassControlHandler>> controls) {
         Objects.requireNonNull(definition, "definition");
         Objects.requireNonNull(providers, "providers");
         Objects.requireNonNull(lifecycle, "lifecycle");
@@ -34,8 +46,10 @@ public final class PrototypeApi {
         }
         // Registry validates every duplicate before mutation; providers cannot overlap existing registered classes.
         conversions().validateProviders(providers);
+        var preparedControls = PrototypeCore.controls().prepare(classIds, controls);
         registry.register(definition, lifecycle);
         conversions().registerProviders(providers);
+        PrototypeCore.controls().register(classIds, preparedControls);
     }
 
     public static void registerAddon(AddonDefinition definition, Map<Id, SwordConversionProvider> providers) {

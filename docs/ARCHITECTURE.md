@@ -6,6 +6,8 @@ The intended addon-facing API lives under `dev.prototype.core.api`. Fabric-speci
 
 ## Authorization model
 
+Core's three neutral controls resolve the authenticated player's current operational active class on the server for every request. Startup-frozen optional class handlers implement only addon behavior. Status callbacks send addon-owned private payloads to addon client screens; Core never interprets gameplay state or loads those screens. See [CLASS_CONTROLS.md](CLASS_CONTROLS.md).
+
 State is keyed by player UUID, not mutable player name.
 
 | Field | Meaning |

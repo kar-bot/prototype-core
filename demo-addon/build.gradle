@@ -1,14 +1,26 @@
 plugins { id 'net.fabricmc.fabric-loom' }
 base { archivesName = 'prototype-demo-addon' }
+version = rootProject.mod_version
+loom {
+    splitEnvironmentSourceSets()
+    mods { prototype_demo { sourceSet sourceSets.main; sourceSet sourceSets.client } }
+}
 java { toolchain { languageVersion = JavaLanguageVersion.of(25) }; withSourcesJar() }
 dependencies {
     minecraft "com.mojang:minecraft:${rootProject.minecraft_version}"
     implementation "net.fabricmc:fabric-loader:${rootProject.loader_version}"
     implementation "net.fabricmc.fabric-api:fabric-api:${rootProject.fabric_api_version}"
     implementation project(':core')
+    testImplementation platform('org.junit:junit-bom:5.12.2')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation 'org.ow2.asm:asm-tree:9.10.1'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 def resourceVersion = project.version.toString()
 processResources {
     inputs.property 'version', resourceVersion
     filesMatching('fabric.mod.json') { expand version: resourceVersion }
 }
+sourceSets.test.compileClasspath += sourceSets.client.output + sourceSets.client.compileClasspath
+sourceSets.test.runtimeClasspath += sourceSets.client.output + sourceSets.client.runtimeClasspath
+tasks.named('test') { dependsOn tasks.named('clientClasses') }

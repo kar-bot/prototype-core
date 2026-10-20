@@ -17,7 +17,7 @@ Addons own their sword items, abilities, damage, targeting, cooldowns, effects, 
 
 ## Fabric dependency and server boundary
 
-Keep the addon as a separate JAR with a common `ModInitializer`. Its `fabric.mod.json` must depend on mod ID `prototype`. The current demo uses Minecraft `26.3`, Java `>=25`, Loader `>=0.19.5`, Fabric API `>=0.162.0+26.3`, and `prototype: >=0.1.0 <0.2.0`; match the actual Core artifact in the target project.
+Keep the addon as a separate JAR with a common `ModInitializer`. Its `fabric.mod.json` must depend on mod ID `prototype`. The current demo uses Minecraft `26.3`, Java `>=25`, Loader `>=0.19.5`, Fabric API `>=0.162.0+26.3`, and `prototype: >=0.2.0-alpha.1 <0.3.0`; match the actual Core artifact in the target project.
 
 Common registration and server behavior must not reference `net.minecraft.client.*`. Put screens, renderers, client receivers, and key polling in a client entrypoint/source set. Validate on a true dedicated server.
 
@@ -70,14 +70,16 @@ public final class ExampleAddon implements ModInitializer {
                 @Override public void onClassDeactivated(PlayerClassContext context) {
                     ExampleSessions.deactivate(context.playerId());
                 }
-            });
+            }, Map.of(CLASS_ID, Map.of(
+                ClassControlSlot.ABILITY_1, player -> ExampleAbilities.abilityOne(player),
+                ClassControlSlot.STATUS, player -> ExampleStatus.sendPrivateSnapshot(player))));
     }
 }
 ```
 
-Imports are `AddonDefinition`, `AddonLifecycle`, `ClassDefinition`, `Id`, and `PlayerClassContext` from `dev.prototype.core.api`; `PrototypeApi` from `dev.prototype.core.api.minecraft`; plus Java `List`, `Map`, `Optional`, Fabric Loader/API, and Minecraft `ItemStack`.
+Imports are `AddonDefinition`, `AddonLifecycle`, `ClassDefinition`, `ClassControlSlot`, `Id`, and `PlayerClassContext` from `dev.prototype.core.api`; `PrototypeApi` from `dev.prototype.core.api.minecraft`; plus Java `List`, `Map`, `Optional`, Fabric Loader/API, and Minecraft `ItemStack`. ExampleItems, ExampleSessions, ExampleAbilities and ExampleStatus are addon-owned implementations, not Core APIs.
 
-`PrototypeApi.registerAddon(AddonDefinition, Map<Id, SwordConversionProvider>, AddonLifecycle)` requires provider keys to equal the definition's class IDs exactly. Every class has one non-null provider, with no extra provider. IDs are globally unique and registration is atomic. The lifecycle-free overload is suitable only when there is truly no transient state. Inspect `demo-addon` as supporting evidence, but follow current Core source if it differs.
+`PrototypeApi.registerAddon(AddonDefinition, Map<Id, SwordConversionProvider>, AddonLifecycle, Map<Id, Map<ClassControlSlot, ClassControlHandler>>)` registers optional controls atomically with the addon. Provider keys must equal registered class IDs exactly. Control maps may omit classes or slots; foreign class keys, null bindings, duplicate registration and late registration are rejected. Maps are copied. The existing two-/three-argument overloads remain compatible and register no controls. Inspect the demo as supporting evidence; current Core source is authoritative.
 
 ## Sword identity and conversion
 
@@ -164,15 +166,15 @@ Core's client does not cache ordinary `PLAYER` snapshots; `/prototype switch` is
 
 ## Three Core controls and Class Status
 
-The current source does **not** implement the intended neutral controls. There are no public APIs for:
+Core 0.2.0-alpha.1 supplies exactly three configurable keys under Prototype Core: Class Ability 1 (default R), Class Ability 2 (G), and Class Status (K). Rebinding uses normal Minecraft Controls. Addons must not duplicate these mappings.
 
-- Class Ability 1;
-- Class Ability 2;
-- Class Status;
-- registering handlers for these slots;
-- dispatching an addon-specific Class Status GUI.
+`dev.prototype.core.api.ClassControlSlot` contains exactly `ABILITY_1`, `ABILITY_2`, and `STATUS`. `dev.prototype.core.api.minecraft.ClassControlHandler` has `void handle(ServerPlayer player)`. Register per-class callbacks in the four-argument overload above; omit unused slots.
 
-Do not invent names or claim registration. A standalone addon may retain its own keybind/status screen temporarily with server checks, but that does not satisfy the intended Core contract. Core needs an implementation pass before these can migrate cleanly.
+Handlers execute synchronously on the server thread for the authenticated player. For every request Core resolves the CURRENT operational active class and verifies registered/enabled/allowed/active/not-banned authorization. Hybrid dispatches only to one active class. Switching and disable/enable require no client handler cache or reconnect. Unavailable/unused/denied controls are silent. The client sends one slot byte, with no class, addon, UUID, ability name or gameplay data. The server checks current connection identity and rate-limits requests.
+
+Addons still validate sword identity, cooldowns, resources and targets, and recheck `PrototypeApi.isAuthorized` in delayed work. Lifecycle hooks clear transient state.
+
+STATUS should call an addon server method that gathers private state and sends an addon-defined Fabric S2C payload only to that player. Register its codec in common initialization and receiver in the client entrypoint. The receiver schedules client work and opens the addon-owned screen. Never instantiate/import client screens on the server. On deactivation/disable/disconnect, cancel pending status work and clear/close presentation. Reauthorize delayed responses before send. Core understands none of the payload's gameplay fields. See DemoStatusPayload, DemoClient and DemoStatusScreen for the actual example. Status is a snapshot; live refresh is addon-owned.
 
 ## Migrating a standalone class mod
 
@@ -184,7 +186,7 @@ Do not invent names or claim registration. A standalone addon may retain its own
 6. Route conversion through Core, removing delete-and-give or blanket component copying only after validation.
 7. Add lifecycle activation/deactivation and runtime enable/disable cleanup while preserving progression.
 8. Filter addon packets and client status by recipient authorization.
-9. Keep existing keybinds/status only as a documented temporary path because Core lacks shared dispatch.
+9. Bind ability/status handlers to Core's three slots and remove duplicate standalone mappings once verified. Keep status payloads, terminology, screens and rendering in the addon.
 10. Remove standalone assignment, switching, Hybrid, Class Ban, enable/disable, and admin infrastructure only after Core equivalents work.
 11. Test with multiple simultaneously registered addons before deleting compatibility code.
 
@@ -194,14 +196,12 @@ Preserve gameplay implementation; migrate shared infrastructure incrementally.
 
 Do not implement these in an addon or invent workarounds presented as Core APIs:
 
-1. **Three neutral keybind slots are absent.** No Class Ability 1, Class Ability 2, or Class Status mappings, payloads, handler interfaces, registration, rebinding, or dispatch exist.
-2. **Class Status GUI dispatch is absent.** An addon cannot register/open a status screen through Core.
-3. **No player-facing metadata subscription API exists.** A filtered server `PlayerSnapshot` exists, but Core's client intentionally does not cache it or expose an addon client API.
-4. **No class-sword identity mapping exists.** Core tracks convertible items and class providers, not ownership of an item by a class.
-5. **No addon persistence extension exists.** Addons must own storage, which preserves the ownership boundary but requires their own implementation.
-6. **No general addon networking/private-status abstraction exists.** Addons must implement packets, recipient filtering, and revocation cleanup.
+1. **No player-facing metadata subscription API exists.** A filtered server PlayerSnapshot exists, but Core's client does not cache it or expose an addon client API.
+2. **No class-sword identity mapping exists.** Core tracks convertible items and class providers, not item ownership by class.
+3. **No addon persistence extension exists.** Addons must own storage, preserving the ownership boundary.
+4. **No general addon networking/private-status abstraction exists.** STATUS initiates an authorized addon response, but addons own payloads, recipient filtering and revocation cleanup.
 
-These gaps block the intended shared controls/status experience. They do not block registration, assignment, authorization, conversion, lifecycle, runtime disable, Hybrid/Class Ban enforcement, stealth, or private persistence.
+The previously blocking shared-control/status-dispatch gaps are resolved. Core deliberately leaves gameplay-specific status schemas and screens in addons.
 
 ## Multi-addon validation
 
@@ -218,12 +218,15 @@ Run project tests, then use a true dedicated server and matching clients:
 - Compare unauthorized secret and nonexistent IDs in autocomplete, GUIs, packets, and switching; neither path may reveal the secret to ordinary users.
 - Temporarily remove/reinstall an addon in a disposable world and verify Core history plus addon storage survive.
 - Forge addon packets and confirm authenticated player, server state, item, cooldown, and `PrototypeApi.isAuthorized` are decisive.
+- Rebind all three controls; verify only the requested slot of the current class executes across Hybrid switches, bans and disable/enable. Unused slots are silent. Status opens only the requesting player's GUI and closes on deactivation/disable/disconnect; screen rendering must not duplicate vanilla background extraction.
 - Confirm no class-specific Pale/Warden/Vampire state enters Core persistence and no common code loads client classes on the dedicated server.
 
 ## Migration readiness
 
-Pale can use current registration, conversion, authorization, lifecycle, runtime disable, Hybrid/Class Ban, stealth, and private persistence. It cannot cleanly complete the intended shared three controls and Class Status routing until Core adds those APIs.
+Pale can now use registration, conversion, authorization, lifecycle, runtime disable, Hybrid/Class Ban, stealth, private persistence and the three shared controls including Status dispatch. Keep Pale gameplay, status schema, screen and cleanup in Pale. The missing-control blocker is resolved; real migration still requires inspecting Pale and combined multiplayer tests.
 
-Warden can use the same current infrastructure while retaining charges, sonic boom, and counters. It also cannot cleanly complete shared controls/status dispatch. If it needs ecosystem-wide sword ownership or live Core-provided authorized client metadata, those are current gaps.
+Warden can use the same controls and infrastructure while retaining charges, sonic boom and counters. Ecosystem-wide sword ownership and live Core-provided client metadata remain gaps if needed.
 
-Vampire has the same limitation: keep Marks, Blood, progression, Hunt, and Blood Moon private, integrate available infrastructure, and defer shared controls/status replacement until Core implements it.
+Vampire can use the same controls/status pattern; keep Marks, Blood, progression, Hunt and Blood Moon private.
+
+Whenever Core's public addon API changes, update this skill in the same task. This repository is authoritative; addon repositories should consume its current skill rather than maintain independent stale copies.

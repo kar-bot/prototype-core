@@ -18,6 +18,7 @@ public final class PrototypeClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
+        ClassControlKeys.init();
         ClientPlayNetworking.registerGlobalReceiver(SnapshotPayload.TYPE, (payload, context) ->
             context.client().execute(() -> receive(context.client(), payload.json())));
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> close(client));

@@ -2,6 +2,7 @@ package dev.prototype.core.network;
 
 import com.google.gson.Gson;
 import dev.prototype.core.PrototypeRuntime;
+import dev.prototype.core.PrototypeCore;
 import dev.prototype.core.api.ActionResult;
 import dev.prototype.core.api.AdminActions;
 import dev.prototype.core.api.AdminRequest;
@@ -33,12 +34,25 @@ public final class PrototypeNetworking {
 
     public static void init() {
         PayloadTypeRegistry.serverboundPlay().register(ActionPayload.TYPE, ActionPayload.CODEC);
+        PayloadTypeRegistry.serverboundPlay().register(ControlPayload.TYPE, ControlPayload.CODEC);
+        ServerPlayNetworking.registerGlobalReceiver(ControlPayload.TYPE, (payload, context) ->
+                context.server().execute(() -> receiveControl(context.server(), context.player(), payload)));
         PayloadTypeRegistry.clientboundPlay().register(SnapshotPayload.TYPE, SnapshotPayload.CODEC);
         ServerPlayNetworking.registerGlobalReceiver(ActionPayload.TYPE, (payload, context) ->
                 context.server().execute(() -> receive(context.server(), context.player(), payload.json())));
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> refreshWatchers(server));
         // Removing OP privileges must clear admin metadata even when nobody changes Core state.
         ServerTickEvents.END_SERVER_TICK.register(PrototypeNetworking::revokeUnauthorizedWatchers);
+    }
+
+    /** Silent for malformed, unavailable, unauthorized and unused slots; no registry disclosure. */
+    public static void receiveControl(MinecraftServer server, ServerPlayer actor, ControlPayload payload) {
+        if (!server.isSameThread()) throw new IllegalStateException("Class controls must run on the server thread");
+        if (actor.level().getServer() != server || actor.hasDisconnected()
+                || server.getPlayerList().getPlayer(actor.getUUID()) != actor) return;
+        WireGuard guard = GUARDS.computeIfAbsent(server, ignored -> new WireGuard());
+        if (!guard.consume(actor.getUUID(), System.nanoTime()) || payload.slot() == null) return;
+        PrototypeCore.controls().dispatch(actor, PrototypeRuntime.service(server), payload.slot());
     }
 
     public static void openAdmin(ServerPlayer player) {
