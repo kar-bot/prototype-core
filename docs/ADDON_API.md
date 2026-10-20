@@ -1,5 +1,7 @@
 # Addon development contract
 
+> Codex contributors: [`.agents/skills/prototype-addon-development/SKILL.md`](../.agents/skills/prototype-addon-development/SKILL.md) is the authoritative local skill for developing or migrating Prototype addons. Consult it when integrating an addon or changing this API.
+
 Prototype Core `0.1.1` targets Minecraft `26.3`, Fabric Loader `0.19.5`, Fabric API `0.162.0+26.3`, and Java `25`. Use Loom `1.18.3` and Gradle `9.7.1` consistently with this repository. Minecraft 26.3 uses unobfuscated Mojang names.
 
 ## Depend on production Core
