@@ -35,7 +35,8 @@ public final class DemoItems {
                         player.getInventory().setChanged();
                     }
                     serverPlayer.sendSystemMessage(Component.literal("Demo active · Core stealth flag: "
-                            + (StealthState.isStealthed(stack) ? "on" : "off")), true);
+                            + (StealthState.isStealthed(stack) ? "on" : "off")
+                            + " · Own class weapon: " + PrototypeApi.isClassWeaponOf(stack, DemoAddon.CLASS_ID)), true);
                     return InteractionResult.SUCCESS;
                 }
             });

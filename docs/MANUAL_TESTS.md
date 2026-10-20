@@ -59,3 +59,13 @@ Record the Minecraft/Fabric/Core/addon versions, server log, client log, and fai
 - Switch to a second control-enabled addon with Hybrid on. Each key routes only to the current class without reconnecting. Hold a foreign sword and verify addon-specific item checks still apply.
 - Ban/unban and disable/re-enable while testing controls. Disabled/banned handlers must never execute; status closes on deactivation, and no stale transient work reappears.
 - Use two clients, including an ordinary player without secret-class authorization. Status data goes only to its requester. Invalid slots and unavailable handlers disclose no class metadata. Verify status closes on disconnect/respawn and never reopens from a stale delayed response.
+
+## Semantic class weapons (alpha.2)
+
+- With demo installed, confirm authorized right-click reports its own class weapon before and after shift-right-click stealth toggles. Ordinary vanilla lookalikes and the neutral Prototype Sword must have no owner.
+- With demo active, press Ability 1 while holding its sword, an ordinary sword, the convertible Prototype Sword and another registered class weapon. Confirm own / ordinary-unclassified / foreign classification without disclosing foreign class IDs.
+- Test registered revealed, model-disguised and alternate persistent-marker forms across multiple addons. Shared-base ordinary stacks without the semantic marker stay unowned.
+- Test stolen, inactive, banned and runtime-disabled class weapons. Identity must remain the registered class; gameplay still requires active authorization.
+- Convert across declared classes with neutral stealth/name/enchantments. The result must resolve to the destination, and private/source identity components must not overwrite it. An invalid destination must leave the original intact.
+- In a development fixture, register overlapping forms in both load orders: initialization must reject the conflict. No ordinary packet/autocomplete/UI may enumerate hidden weapon forms or ownership data.
+- Confirm API 2 alpha.1 addons still load; until they adopt declarations their weapons remain semantically unclassified, with no visual guesses.

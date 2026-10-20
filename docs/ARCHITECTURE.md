@@ -35,6 +35,8 @@ This protects disclosure through Core's server protocol and commands. Locally in
 
 ## Conversion ownership
 
+The existing addon/class `Registry` now also owns optional declarative semantic weapon forms. Identity queries inspect item identity and persistent component constraints, never presentation. Ownership survives Class Ban, runtime disable and holder/class changes; it grants no ability authorization. Overlaps reject startup registration. No ownership registry is automatically serialized to clients. See [CLASS_WEAPONS.md](CLASS_WEAPONS.md).
+
 Conversion uses the server's actual held stack and current active class. Core checks class authorization, runtime addon state, and registered source-item compatibility before invoking the destination provider. Sword switching and class switching are independent operations.
 
 An addon creates the destination sword. Transfer starts with that destination's own components and applies only approved physical source state. Custom name, compatible enchantments, and Core's neutral stealth state are handled explicitly; addon-private components require explicit transfer registration. Copying the entire source component map would cross addon ownership boundaries and is forbidden by the contract.

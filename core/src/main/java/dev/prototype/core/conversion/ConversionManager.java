@@ -4,6 +4,7 @@ import dev.prototype.core.api.CoreService;
 import dev.prototype.core.api.Id;
 import dev.prototype.core.api.minecraft.SwordConversionContext;
 import dev.prototype.core.api.minecraft.SwordConversionProvider;
+import dev.prototype.core.weapon.WeaponStacks;
 import dev.prototype.core.item.CoreComponents;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -126,6 +127,11 @@ public final class ConversionManager {
             }
             transferCommonState(source, result);
             transferOptedInState(source, result);
+            // Opted-in identities must still describe the destination after all physical transfers.
+            if (service.registry().hasClassWeapons(active.get())
+                    && !WeaponStacks.owner(service.registry(), result).filter(active.get()::equals).isPresent()) {
+                return ConversionResult.rejected(FAILED);
+            }
             // A provider/transfer hook may execute other mod code; validate again immediately before commit.
             if (!snapshot.unchanged(player)) return rejectAndRestore(player, snapshot);
             if (service.revision() != revision || !service.isAuthorized(player.getUUID(), active.get())) {

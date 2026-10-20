@@ -17,7 +17,7 @@ Addons own their sword items, abilities, damage, targeting, cooldowns, effects, 
 
 ## Fabric dependency and server boundary
 
-Keep the addon as a separate JAR with a common `ModInitializer`. Its `fabric.mod.json` must depend on mod ID `prototype`. The current demo uses Minecraft `26.3`, Java `>=25`, Loader `>=0.19.5`, Fabric API `>=0.162.0+26.3`, and `prototype: >=0.2.0-alpha.1 <0.3.0`; match the actual Core artifact in the target project.
+Keep the addon as a separate JAR with a common `ModInitializer`. Its `fabric.mod.json` must depend on mod ID `prototype`. The current demo uses Minecraft `26.3`, Java `>=25`, Loader `>=0.19.5`, Fabric API `>=0.162.0+26.3`, and `prototype: >=0.2.0-alpha.2 <0.3.0`; match the actual Core artifact in the target project. API version remains 2; alpha.1 registration overloads are retained.
 
 Common registration and server behavior must not reference `net.minecraft.client.*`. Put screens, renderers, client receivers, and key polling in a client entrypoint/source set. Validate on a true dedicated server.
 
@@ -72,12 +72,13 @@ public final class ExampleAddon implements ModInitializer {
                 }
             }, Map.of(CLASS_ID, Map.of(
                 ClassControlSlot.ABILITY_1, player -> ExampleAbilities.abilityOne(player),
-                ClassControlSlot.STATUS, player -> ExampleStatus.sendPrivateSnapshot(player))));
+                ClassControlSlot.STATUS, player -> ExampleStatus.sendPrivateSnapshot(player))),
+            Map.of(CLASS_ID, List.of(ClassWeaponForm.of(ExampleItems.CLASS_SWORD))));
     }
 }
 ```
 
-Imports are `AddonDefinition`, `AddonLifecycle`, `ClassDefinition`, `ClassControlSlot`, `Id`, and `PlayerClassContext` from `dev.prototype.core.api`; `PrototypeApi` from `dev.prototype.core.api.minecraft`; plus Java `List`, `Map`, `Optional`, Fabric Loader/API, and Minecraft `ItemStack`. ExampleItems, ExampleSessions, ExampleAbilities and ExampleStatus are addon-owned implementations, not Core APIs.
+Imports are `AddonDefinition`, `AddonLifecycle`, `ClassDefinition`, `ClassControlSlot`, `Id`, and `PlayerClassContext` from `dev.prototype.core.api`; `PrototypeApi` and `ClassWeaponForm` from `dev.prototype.core.api.minecraft`; plus Java `List`, `Map`, `Optional`, Fabric Loader/API, and Minecraft `ItemStack`. ExampleItems, ExampleSessions, ExampleAbilities and ExampleStatus are addon-owned implementations, not Core APIs.
 
 `PrototypeApi.registerAddon(AddonDefinition, Map<Id, SwordConversionProvider>, AddonLifecycle, Map<Id, Map<ClassControlSlot, ClassControlHandler>>)` registers optional controls atomically with the addon. Provider keys must equal registered class IDs exactly. Control maps may omit classes or slots; foreign class keys, null bindings, duplicate registration and late registration are rejected. Maps are copied. The existing two-/three-argument overloads remain compatible and register no controls. Inspect the demo as supporting evidence; current Core source is authoritative.
 
@@ -99,7 +100,33 @@ PrototypeApi.conversions().permitTransfer(ExampleItems.CLASS_SWORD, transfer);
 
 Both physical endpoints must permit the same ID. Never use this for unrelated private progression.
 
-Core has no public item-to-class identity registry or `classForItem` query. Each addon recognizes its own sword. A wrong-class sword retains its physical identity, but its abilities must fail authorization. Record ecosystem-wide sword ownership queries as an API gap.
+Core 0.2.0-alpha.2 adds semantic class-weapon identity in the existing addon registry. Use the five-argument overload:
+
+```java
+PrototypeApi.registerAddon(definition, providers, lifecycle, controls,
+    Map.of(CLASS_ID, List.of(ClassWeaponForm.of(MY_SWORD))));
+```
+
+`ClassWeaponForm.of(Item)` claims every state of a dedicated registered item, including revealed/stealth/disguise states. For a shared raw item, use persistent semantic component constraints: `ClassWeaponForm.of(SHARED_ITEM).with(MY_IDENTITY_COMPONENT, markerValue)`. Chain `.with(...)` to require several exact component values, or `.without(component)` to require absence. Every call returns a new immutable form. Expected values must follow Minecraft's immutable component-value contract and implement meaningful equality. Missing and explicit false are distinct constraints, unlike `StealthState.isStealthed`'s false default. A whole-item form covers both automatically. Register every legitimate item/component form, including a separate Blood representation if the addon actually uses one.
+
+Forms are declarative, not arbitrary predicates: Core rejects any overlap before addon registration commits, including duplicate/redundant forms within one class and conflicts across addons. Same-item forms are provably disjoint only if a shared component constraint differs (including present versus absent). Otherwise registration fails rather than selecting by load order. Unknown class keys, unregistered/air items, unregistered/transient components and common presentation constraints (name, lore, model, custom model data, dye color) are rejected. Use semantic markers, never appearance or progression, to establish ownership. `weapon` implementation packages are internal; addons use the typed facade.
+
+Query the authoritative server-side stack:
+
+```java
+Optional<Id> owner = PrototypeApi.classWeaponOwner(serverPlayer.getMainHandItem());
+boolean anyClass = PrototypeApi.isClassWeapon(stack);
+boolean ownClass = PrototypeApi.isClassWeaponOf(stack, CLASS_ID);
+boolean foreignClass = owner.isPresent() && !owner.get().equals(CLASS_ID);
+```
+
+No match (including null/empty stack or an unregistered legacy addon item) returns empty/false. Identity ignores holder authorization, active class, Hybrid, Class Ban and runtime addon disable; a stolen/disabled foreign weapon remains foreign. Identity never grants use: abilities must still pass `PrototypeApi.isAuthorized`.
+
+Convertibility is independent: the neutral Prototype Sword and a convertible ordinary item have no class owner unless a registered form matches. A class weapon need not be convertible. For classes declaring forms, Core revalidates the final converted stack's owner AFTER all transfers and rejects a wrong/unmatched destination without replacing the source. Factory defaults must create the destination's semantic marker. Do not transfer source markers or private gameplay state; register all supported stealth values so legitimate neutral-stealth transfer remains valid. Classes using older overloads retain their earlier conversion behavior.
+
+No ownership registry or query packet is synchronized to clients. Never accept a client-asserted owner ID; query the server's real inventory stack. Do not enumerate secret forms/IDs in addon packets or ordinary UI. Core still cannot hide resources or component values already present in a locally installed/observed item.
+
+Existing Pale/Warden integrations need a small adoption update: depend on alpha.2 or newer, add their dedicated item(s) via the fifth registration argument, and declare any shared-base stealth/Blood representation with a persistent semantic marker. Until they do, consumers must treat the missing registration as unknown/unclassified; do not guess based on visuals or convertibility. Alpha.1 overloads and API 2 remain compatible.
 
 ## Authorization at every entry point
 
@@ -181,7 +208,7 @@ STATUS should call an addon server method that gathers private state and sends a
 1. Inventory stable IDs, swords, abilities, packets, screens, persistence, temporary effects, and standalone administration.
 2. Add the matching Prototype Core dependency while keeping a separate addon JAR.
 3. Register stable addon/class metadata and the real Fabric metadata version.
-4. Register every compatible class sword and exactly one side-effect-free provider per class.
+4. Register every compatible class sword and one side-effect-free provider per class. Declare semantic weapon forms with the fifth registration argument; include every legitimate stealth/shared-base form and initialize destination identity in conversion factories.
 5. Replace all authorization assumptions with `PrototypeApi.isAuthorized`; retain physical sword checks where required.
 6. Route conversion through Core, removing delete-and-give or blanket component copying only after validation.
 7. Add lifecycle activation/deactivation and runtime enable/disable cleanup while preserving progression.
@@ -197,11 +224,10 @@ Preserve gameplay implementation; migrate shared infrastructure incrementally.
 Do not implement these in an addon or invent workarounds presented as Core APIs:
 
 1. **No player-facing metadata subscription API exists.** A filtered server PlayerSnapshot exists, but Core's client does not cache it or expose an addon client API.
-2. **No class-sword identity mapping exists.** Core tracks convertible items and class providers, not item ownership by class.
-3. **No addon persistence extension exists.** Addons must own storage, preserving the ownership boundary.
-4. **No general addon networking/private-status abstraction exists.** STATUS initiates an authorized addon response, but addons own payloads, recipient filtering and revocation cleanup.
+2. **No addon persistence extension exists.** Addons must own storage, preserving the ownership boundary.
+3. **No general addon networking/private-status abstraction exists.** STATUS initiates an authorized addon response, but addons own payloads, recipient filtering and revocation cleanup.
 
-The previously blocking shared-control/status-dispatch gaps are resolved. Core deliberately leaves gameplay-specific status schemas and screens in addons.
+The shared-control/status-dispatch and semantic weapon identity gaps are resolved. Addons must adopt the new weapon declarations before consumers can recognize their forms. Core deliberately leaves gameplay-specific schemas and mechanics in addons.
 
 ## Multi-addon validation
 
@@ -220,13 +246,14 @@ Run project tests, then use a true dedicated server and matching clients:
 - Forge addon packets and confirm authenticated player, server state, item, cooldown, and `PrototypeApi.isAuthorized` are decisive.
 - Rebind all three controls; verify only the requested slot of the current class executes across Hybrid switches, bans and disable/enable. Unused slots are silent. Status opens only the requesting player's GUI and closes on deactivation/disable/disconnect; screen rendering must not duplicate vanilla background extraction.
 - Confirm no class-specific Pale/Warden/Vampire state enters Core persistence and no common code loads client classes on the dedicated server.
+- Check semantic ownership of revealed/disguised/stealth forms, ordinary lookalikes, owned/foreign weapons, disabled addons and unauthorized/banned holders. Verify overlapping declarations reject startup, identity survives legitimate conversion/disk codecs, source identity markers never overwrite a destination, and no secret form registry appears in ordinary packets.
 
 ## Migration readiness
 
 Pale can now use registration, conversion, authorization, lifecycle, runtime disable, Hybrid/Class Ban, stealth, private persistence and the three shared controls including Status dispatch. Keep Pale gameplay, status schema, screen and cleanup in Pale. The missing-control blocker is resolved; real migration still requires inspecting Pale and combined multiplayer tests.
 
-Warden can use the same controls and infrastructure while retaining charges, sonic boom and counters. Ecosystem-wide sword ownership and live Core-provided client metadata remain gaps if needed.
+Warden can use the same controls and infrastructure while retaining charges, sonic boom and counters. It can now declare semantic sword forms; live Core-provided client metadata remains absent.
 
-Vampire can use the same controls/status pattern; keep Marks, Blood, progression, Hunt and Blood Moon private.
+Vampire can now classify ordinary, own and foreign registered class weapons without importing Pale/Warden internals. Actual foreign recognition requires each owner to adopt weapon declarations. Keep hijacking, projection, Blood rendering, reward decisions, Marks, progression, Hunt and Blood Moon in Vampire; identity does not authorize foreign abilities.
 
 Whenever Core's public addon API changes, update this skill in the same task. This repository is authoritative; addon repositories should consume its current skill rather than maintain independent stale copies.

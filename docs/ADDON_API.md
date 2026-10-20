@@ -2,15 +2,15 @@
 
 > Codex contributors: [`.agents/skills/prototype-addon-development/SKILL.md`](../.agents/skills/prototype-addon-development/SKILL.md) is the authoritative local skill for developing or migrating Prototype addons. Consult it when integrating an addon or changing this API.
 
-Prototype Core `0.2.0-alpha.1` targets Minecraft `26.3`, Fabric Loader `0.19.5`, Fabric API `0.162.0+26.3`, and Java `25`. Use Loom `1.18.3` and Gradle `9.7.1` consistently with this repository. Minecraft 26.3 uses unobfuscated Mojang names. See [neutral class controls](CLASS_CONTROLS.md) for the new three-slot API and addon-owned Status GUI pattern.
+Prototype Core `0.2.0-alpha.2` (API 2) targets Minecraft `26.3`, Fabric Loader `0.19.5`, Fabric API `0.162.0+26.3`, and Java `25`. Use Loom `1.18.3` and Gradle `9.7.1` consistently with this repository. Minecraft 26.3 uses unobfuscated Mojang names. See [neutral class controls](CLASS_CONTROLS.md) and [semantic class weapons](CLASS_WEAPONS.md).
 
 ## Depend on production Core
 
-For a standalone addon, place the built **production** `prototype-core-0.2.0-alpha.1.jar` in your addon's `libs` directory and add it as a local development dependency:
+For a standalone addon, place the built **production** `prototype-core-0.2.0-alpha.2.jar` in your addon's `libs` directory and add it as a local development dependency:
 
 ```groovy
 dependencies {
-    implementation files('libs/prototype-core-0.2.0-alpha.1.jar')
+    implementation files('libs/prototype-core-0.2.0-alpha.2.jar')
 }
 ```
 
@@ -18,7 +18,7 @@ Declare the runtime dependency in your addon's `fabric.mod.json`:
 
 ```json
 "depends": {
-  "prototype": ">=0.2.0-alpha.1 <0.3.0",
+  "prototype": ">=0.2.0-alpha.2 <0.3.0",
   "fabricloader": ">=0.19.5",
   "minecraft": "26.3",
   "java": ">=25",
@@ -63,7 +63,7 @@ void registerWithCore() {
     PrototypeApi.registerConvertible(DEMO_SWORD);
     PrototypeApi.registerAddon(
         new AddonDefinition(
-            ADDON, "Prototype Demo", "0.2.0-alpha.1",
+            ADDON, "Prototype Demo", "0.2.0-alpha.2",
             "prototype_demo:textures/gui/demo_thumbnail.png",
             List.of(new ClassDefinition(CLASS, "Demo"))),
         Map.of(CLASS, context -> Optional.of(new ItemStack(DEMO_SWORD))),
@@ -87,6 +87,8 @@ void registerWithCore() {
 Registration says the addon is installed. It does not assign players or grant class use, visibility, or conversion access. Runtime enable/disable changes state; it never removes the installed item registration or unloads a Fabric mod.
 
 Use the addon's actual Fabric metadata version in production registration, as the demo does; keep presentation version information consistent with the installed JAR.
+
+The two-/three-/four-argument `registerAddon` methods remain binary compatible with alpha.1. A fifth `Map<Id, List<ClassWeaponForm>>` argument declares optional semantic weapon forms in the same registration/freeze transaction. Use `ClassWeaponForm.of(item)` for a dedicated item or `.with(persistentSemanticComponent, value)` / `.without(component)` for exact component-aware forms. `PrototypeApi.classWeaponOwner(ItemStack)`, `isClassWeapon(ItemStack)` and `isClassWeaponOf(ItemStack, Id)` query actual stack identity independently of holder authorization, runtime disable or conversion compatibility. Overlapping claims reject registration. No registry synchronization is added. See [the complete contract and migration steps](CLASS_WEAPONS.md); `dev.prototype.core.weapon` is internal bridge/registry implementation, not an addon extension package.
 
 ## Thumbnail resources
 

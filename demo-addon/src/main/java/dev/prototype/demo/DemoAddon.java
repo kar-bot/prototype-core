@@ -7,6 +7,7 @@ import dev.prototype.core.api.ClassControlSlot;
 import dev.prototype.core.api.Id;
 import dev.prototype.core.api.PlayerClassContext;
 import dev.prototype.core.api.minecraft.PrototypeApi;
+import dev.prototype.core.api.minecraft.ClassWeaponForm;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -18,6 +19,7 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 
@@ -61,9 +63,17 @@ public final class DemoAddon implements ModInitializer {
                         }
                     }
                 }, Map.of(CLASS_ID, Map.of(
-                        ClassControlSlot.ABILITY_1, player -> player.sendSystemMessage(
-                                Component.literal("Demo Class Ability 1"), true),
+                        ClassControlSlot.ABILITY_1, DemoAddon::showAbilityOne,
                         // Ability 2 is intentionally unused. STATUS sends only to this player.
-                        ClassControlSlot.STATUS, DemoStatusPayload::open)));
+                        ClassControlSlot.STATUS, DemoStatusPayload::open)),
+                Map.of(CLASS_ID, List.of(ClassWeaponForm.of(DemoItems.DEMO_SWORD))));
+    }
+
+    private static void showAbilityOne(ServerPlayer player) {
+        var owner = PrototypeApi.classWeaponOwner(player.getMainHandItem());
+        String kind = owner.isEmpty() ? "ordinary/unclassified"
+                : owner.get().equals(CLASS_ID) ? "own class weapon" : "foreign class weapon";
+        // No foreign IDs or registry metadata are sent, only this player's held-item classification.
+        player.sendSystemMessage(Component.literal("Demo Class Ability 1 · Held: " + kind), true);
     }
 }

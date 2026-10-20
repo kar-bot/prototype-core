@@ -14,6 +14,15 @@ import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 
 class ClassControlArchitectureTest {
+    @Test void compiledClientDoesNotReadOrEnumerateSemanticWeaponRegistry() throws Exception {
+        try (var paths = Files.walk(Path.of("build/classes/java/client"))) {
+            for (var path : paths.filter(p -> p.toString().endsWith(".class")).toList()) {
+                String pool = new String(Files.readAllBytes(path), StandardCharsets.ISO_8859_1);
+                assertFalse(pool.contains("classWeaponOwner") || pool.contains("WeaponIdentity")
+                        || pool.contains("classWeapons"), path.toString());
+            }
+        }
+    }
     @Test void compiledClientRegistersExactlyThreeNeutralMappingsAndNoClassRegistryCache() throws Exception {
         try (var stream = getClass().getClassLoader().getResourceAsStream("dev/prototype/core/client/ClassControlKeys.class")) {
             assertNotNull(stream);

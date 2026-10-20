@@ -1,6 +1,6 @@
 # Prototype Core validation
 
-Current 0.2.0-alpha.1 evidence: [neutral control validation](CONTROLS_VALIDATION.md). The following report records the historical 0.1.1 delivery and its artifacts/results.
+Current 0.2.0-alpha.2 evidence: [semantic weapon identity validation](WEAPON_IDENTITY_VALIDATION.md). Earlier [neutral control validation](CONTROLS_VALIDATION.md) records alpha.1. The following report records the historical 0.1.1 delivery and its artifacts/results.
 
 ## Prototype Core 0.1.1 delivery and validation
 

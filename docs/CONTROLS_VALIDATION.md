@@ -1,5 +1,7 @@
 # Prototype Core 0.2.0-alpha.1 validation
 
+This is historical alpha.1 evidence. Alpha.2 resolves the weapon identity gap described below; see [current identity validation](WEAPON_IDENTITY_VALIDATION.md).
+
 Baseline inspected: `de3b46f19e6450b02605e4671e65c43990bb256b` on `main`, matching GitHub and the Pale readiness audit. No Pale, Warden or Vampire repository was modified. This prerelease adds neutral controls while preserving existing registration overloads, authorization, lifecycle, conversion, persistence and admin screens.
 
 ## Implemented contract

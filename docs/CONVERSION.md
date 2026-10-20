@@ -1,5 +1,7 @@
 # Sword conversion contract
 
+Semantic ownership is separate from convertibility. Classes opting into [class-weapon declarations](CLASS_WEAPONS.md) must produce a destination whose owner still matches the target after all transfers. Core rejects a foreign/unmatched result without replacing the source. Factories initialize their own identity components; never transfer another class's marker. Whole-item forms naturally survive neutral stealth transfer; state-constrained forms must include every legitimate stealth representation. Older registration overloads without forms retain their previous conversion behavior.
+
 `/prototype convert` converts the main-hand sword into the player's one operational active class.
 It does not select a class. The server checks registration, the class ban, stored authorization,
 active class, runtime addon state, held item identity, and a count of exactly one. The provider
